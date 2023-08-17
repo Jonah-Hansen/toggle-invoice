@@ -1,0 +1,4 @@
+venv
+.vscode
+preferences.json
+generated_invoices

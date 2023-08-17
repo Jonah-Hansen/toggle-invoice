@@ -1,0 +1,38 @@
+{
+  "myInfo": {
+    "name": "",
+    "companyName": "",
+    "email": "",
+    "phone": "",
+    "address": {
+      "streetAddress": "",
+      "city": "",
+      "province": "",
+      "country": "",
+      "postalCode": ""
+    },
+    "apiKey": "",
+    "workspaceId": ""
+  },
+  "clientInfo": {
+    "name": "",
+    "companyName": "",
+    "address": {
+      "streetAddress": "",
+      "city": "",
+      "province": "",
+      "country": "",
+      "postalCode": ""
+    }
+  },
+  "options": {
+    "invoiceNumber": 1,
+    "paymentTerms": "NET7",
+    "payDays": [
+      1,
+      16
+    ],
+    "rate": 27.5,
+    "roundingMinutes": 15
+  }
+}
