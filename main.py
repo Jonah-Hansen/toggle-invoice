@@ -107,6 +107,7 @@ c.drawRightString(c._pagesize[0] - 1*inch, 3.80 *
 end_date = today
 while not (end_date.day in options['payDays']):
     end_date -= timedelta(days=1)
+end_date -= timedelta(days=1)
 start_date = end_date - timedelta(days=1)
 while not (start_date.day in options['payDays']):
     start_date -= timedelta(days=1)
