@@ -134,16 +134,18 @@ for work in times:
         headers={'content-type': 'application/json',
                  'Authorization': f'Basic {auth}'}
     ).json()
-    hours = options['roundingMinutes'] * \
-        round((sum(work['seconds'])/60)/options['roundingMinutes'])/60
+    hours = round(
+        options['roundingMinutes'] *
+        round((sum(work['seconds'])/60)/options['roundingMinutes'])/60, 2)
     data.append([
         project['name'],
         hours,
         options['rate'],
-        round(hours * options['rate']+0.005, 2)
+        round(hours * options['rate'], 2)
     ])
 
-data.append(['', '', 'TOTAL', sum([i[-1] for i in data[1:]])])
+data.append(['', '', 'TOTAL', '{0:.2f}'.format(
+    sum([i[-1] for i in data[1:]]))])
 
 # items
 c.saveState()
