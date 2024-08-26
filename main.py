@@ -46,6 +46,7 @@ def generate_invoice():
         },
         'email': email_entry.get(),
         'phone': phone_entry.get(),
+        'taxID': taxID_entry.get(),
         'apiKey': apiKey_entry.get(),
         'workspaceId': workspaceId_entry.get()
     }
@@ -67,7 +68,9 @@ def generate_invoice():
         'paymentTerms': paymentTerms_entry.get(),
         'roundingMinutes': int(roundingMinutes_entry.get()),
         'rate': float(rate_entry.get()),
-        'payDays': list(map(int, payDays_entry.get().split(',')))
+        'payDays': list(map(int, payDays_entry.get().split(','))),
+        'taxType': str(taxType_entry.get()),
+        'taxPercent': int(taxPercent_entry.get())
     }
 
     today = date.today()
@@ -107,6 +110,9 @@ def generate_invoice():
     if len(me['phone']) > 0:
         sectionY += .25
         c.drawString(inch, sectionY * inch, me['phone'])
+    if len(me['taxID']) > 0:
+        sectionY += .25
+        c.drawString(inch, sectionY * inch, f"gst #: {me['taxID']}")
 
     # Client details
     sectionY = 3
@@ -167,6 +173,7 @@ def generate_invoice():
 
     data = [["Project", "hours", "rate", "total"]]
 
+    subtotal = 0
     for work in times:
         project = requests.get(
             f"https://api.track.toggl.com/api/v9/workspaces/{me['workspaceId']}/projects/{work['project_id']}",
@@ -175,15 +182,22 @@ def generate_invoice():
         ).json()
         hours = round(options['roundingMinutes'] * round(
             (sum(work['seconds']) / 60) / options['roundingMinutes']) / 60, 2)
+        total = round(hours * options['rate'], 2)
+        subtotal += total
         data.append([
             project['name'],
             hours,
-            options['rate'],
-            round(hours * options['rate'], 2)
+            '{0:.2f}'.format(options['rate']),
+            '{0:.2f}'.format(total)
         ])
 
+    data.append(['', '', 'SUBTOTAL', '{0:.2f}'.format(
+        subtotal)])
+    taxes = subtotal * (options["taxPercent"]/100)
+    data.append(['', '', options["taxType"], '{0:.2f}'.format(
+        taxes)])
     data.append(['', '', 'TOTAL', '{0:.2f}'.format(
-        sum([i[-1] for i in data[1:]]))])
+        subtotal + taxes)])
 
     # Items
     c.saveState()
@@ -193,8 +207,8 @@ def generate_invoice():
     items = Table(data, colWidths=[
                   3.75 * inch, inch, .75 * inch, inch], rowHeights=.35 * inch, vAlign='MIDDLE')
     style = TableStyle(
-        [('GRID', (0, 0), (-1, -2), .75, '#505050'),
-         ('GRID', (-1, -1), (-1, -1), .75, '#505050'),
+        [('GRID', (0, 0), (-1, -4), .75, '#505050'),
+         ('GRID', (-1, -4), (-1, -1), .75, '#505050'),
          ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
          ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
          ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
@@ -219,6 +233,7 @@ def generate_invoice():
         f.close()
 
     messagebox.showinfo("Success", "Invoice generated successfully!")
+    exit()
 
 
 # Load preferences
@@ -278,91 +293,107 @@ phone_entry = tk.Entry(root)
 phone_entry.grid(row=9, column=1, padx=10, pady=5)
 phone_entry.insert(0, prefs['myInfo'].get('phone', ''))
 
-tk.Label(root, text="API Key").grid(row=10, column=0, sticky=tk.E)
+tk.Label(root, text="tax ID").grid(row=10, column=0, sticky=tk.E)
+taxID_entry = tk.Entry(root)
+taxID_entry.grid(row=10, column=1, padx=10, pady=5)
+taxID_entry.insert(0, prefs['myInfo'].get('taxID', ''))
+
+tk.Label(root, text="API Key").grid(row=11, column=0, sticky=tk.E)
 apiKey_entry = tk.Entry(root)
-apiKey_entry.grid(row=10, column=1, padx=10, pady=5)
+apiKey_entry.grid(row=11, column=1, padx=10, pady=5)
 apiKey_entry.insert(0, prefs['myInfo'].get('apiKey', ''))
 
-tk.Label(root, text="Workspace ID").grid(row=11, column=0, sticky=tk.E)
+tk.Label(root, text="Workspace ID").grid(row=12, column=0, sticky=tk.E)
 workspaceId_entry = tk.Entry(root)
-workspaceId_entry.grid(row=11, column=1, padx=10, pady=5)
+workspaceId_entry.grid(row=12, column=1, padx=10, pady=5)
 workspaceId_entry.insert(0, prefs['myInfo'].get('workspaceId', ''))
 
 # Client Info
 tk.Label(root, text="Client Info", font=('Helvetica', 14, 'bold')).grid(
-    row=12, columnspan=2, pady=10)
-tk.Label(root, text="Client Name").grid(row=13, column=0, sticky=tk.E)
+    row=13, columnspan=2, pady=10)
+tk.Label(root, text="Client Name").grid(row=14, column=0, sticky=tk.E)
 clientName_entry = tk.Entry(root)
-clientName_entry.grid(row=13, column=1, padx=10, pady=5)
+clientName_entry.grid(row=14, column=1, padx=10, pady=5)
 clientName_entry.insert(0, prefs['clientInfo'].get('name', ''))
 
-tk.Label(root, text="Client Company Name").grid(row=14, column=0, sticky=tk.E)
+tk.Label(root, text="Client Company Name").grid(row=15, column=0, sticky=tk.E)
 clientCompanyName_entry = tk.Entry(root)
-clientCompanyName_entry.grid(row=14, column=1, padx=10, pady=5)
+clientCompanyName_entry.grid(row=15, column=1, padx=10, pady=5)
 clientCompanyName_entry.insert(0, prefs['clientInfo'].get('companyName', ''))
 
 tk.Label(root, text="Client Street Address").grid(
-    row=15, column=0, sticky=tk.E)
+    row=16, column=0, sticky=tk.E)
 clientStreetAddress_entry = tk.Entry(root)
-clientStreetAddress_entry.grid(row=15, column=1, padx=10, pady=5)
+clientStreetAddress_entry.grid(row=16, column=1, padx=10, pady=5)
 clientStreetAddress_entry.insert(
     0, prefs['clientInfo']['address'].get('streetAddress', ''))
 
-tk.Label(root, text="Client City").grid(row=16, column=0, sticky=tk.E)
+tk.Label(root, text="Client City").grid(row=17, column=0, sticky=tk.E)
 clientCity_entry = tk.Entry(root)
-clientCity_entry.grid(row=16, column=1, padx=10, pady=5)
+clientCity_entry.grid(row=17, column=1, padx=10, pady=5)
 clientCity_entry.insert(0, prefs['clientInfo']['address'].get('city', ''))
 
-tk.Label(root, text="Client Province").grid(row=17, column=0, sticky=tk.E)
+tk.Label(root, text="Client Province").grid(row=18, column=0, sticky=tk.E)
 clientProvince_entry = tk.Entry(root)
-clientProvince_entry.grid(row=17, column=1, padx=10, pady=5)
+clientProvince_entry.grid(row=18, column=1, padx=10, pady=5)
 clientProvince_entry.insert(
     0, prefs['clientInfo']['address'].get('province', ''))
 
-tk.Label(root, text="Client Country").grid(row=18, column=0, sticky=tk.E)
+tk.Label(root, text="Client Country").grid(row=19, column=0, sticky=tk.E)
 clientCountry_entry = tk.Entry(root)
-clientCountry_entry.grid(row=18, column=1, padx=10, pady=5)
+clientCountry_entry.grid(row=19, column=1, padx=10, pady=5)
 clientCountry_entry.insert(
     0, prefs['clientInfo']['address'].get('country', ''))
 
-tk.Label(root, text="Client Postal Code").grid(row=19, column=0, sticky=tk.E)
+tk.Label(root, text="Client Postal Code").grid(row=20, column=0, sticky=tk.E)
 clientPostalCode_entry = tk.Entry(root)
-clientPostalCode_entry.grid(row=19, column=1, padx=10, pady=5)
+clientPostalCode_entry.grid(row=20, column=1, padx=10, pady=5)
 clientPostalCode_entry.insert(
     0, prefs['clientInfo']['address'].get('postalCode', ''))
 
 # Invoice Options
 tk.Label(root, text="Invoice Options", font=(
-    'Helvetica', 14, 'bold')).grid(row=20, columnspan=2, pady=10)
-tk.Label(root, text="Invoice Number").grid(row=21, column=0, sticky=tk.E)
+    'Helvetica', 14, 'bold')).grid(row=21, columnspan=2, pady=10)
+tk.Label(root, text="Invoice Number").grid(row=22, column=0, sticky=tk.E)
 invoiceNumber_entry = tk.Entry(root)
-invoiceNumber_entry.grid(row=21, column=1, padx=10, pady=5)
+invoiceNumber_entry.grid(row=22, column=1, padx=10, pady=5)
 invoiceNumber_entry.insert(0, prefs['options'].get('invoiceNumber', ''))
 
-tk.Label(root, text="Payment Terms").grid(row=22, column=0, sticky=tk.E)
+tk.Label(root, text="Payment Terms").grid(row=23, column=0, sticky=tk.E)
 paymentTerms_entry = tk.Entry(root)
-paymentTerms_entry.grid(row=22, column=1, padx=10, pady=5)
+paymentTerms_entry.grid(row=23, column=1, padx=10, pady=5)
 paymentTerms_entry.insert(0, prefs['options'].get('paymentTerms', ''))
 
-tk.Label(root, text="Rounding Minutes").grid(row=23, column=0, sticky=tk.E)
+tk.Label(root, text="Rounding Minutes").grid(row=24, column=0, sticky=tk.E)
 roundingMinutes_entry = tk.Entry(root)
-roundingMinutes_entry.grid(row=23, column=1, padx=10, pady=5)
+roundingMinutes_entry.grid(row=24, column=1, padx=10, pady=5)
 roundingMinutes_entry.insert(0, prefs['options'].get('roundingMinutes', ''))
 
-tk.Label(root, text="Rate").grid(row=24, column=0, sticky=tk.E)
+tk.Label(root, text="Rate").grid(row=25, column=0, sticky=tk.E)
 rate_entry = tk.Entry(root)
-rate_entry.grid(row=24, column=1, padx=10, pady=5)
+rate_entry.grid(row=25, column=1, padx=10, pady=5)
 rate_entry.insert(0, prefs['options'].get('rate', ''))
 
-tk.Label(root, text="Pay Days").grid(row=25, column=0, sticky=tk.E)
+tk.Label(root, text="Pay Days").grid(row=26, column=0, sticky=tk.E)
 payDays_entry = tk.Entry(root)
-payDays_entry.grid(row=25, column=1, padx=10, pady=5)
+payDays_entry.grid(row=26, column=1, padx=10, pady=5)
 payDays_entry.insert(0, ','.join(
     map(str, prefs['options'].get('payDays', []))))
+
+tk.Label(root, text="taxes", font=(
+    'Helvetica', 12, 'bold')).grid(row=27, columnspan=1, pady=2)
+tk.Label(root, text="Type").grid(row=28, column=0, sticky=tk.E)
+taxType_entry = tk.Entry(root)
+taxType_entry.grid(row=28, column=1, padx=10, pady=5)
+taxType_entry.insert(0, prefs['options'].get('taxes').get("type", ""))
+tk.Label(root, text="percent").grid(row=29, column=0, sticky=tk.E)
+taxPercent_entry = tk.Entry(root)
+taxPercent_entry.grid(row=29, column=1, padx=10, pady=5)
+taxPercent_entry.insert(0, prefs['options'].get('taxes').get("percent", 0))
 
 # Generate Invoice Button
 generate_button = tk.Button(
     root, text="Generate Invoice", command=generate_invoice)
-generate_button.grid(row=26, columnspan=2, pady=20)
+generate_button.grid(row=30, columnspan=2, pady=20)
 
 root.mainloop()

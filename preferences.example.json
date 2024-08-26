@@ -4,6 +4,7 @@
     "companyName": "",
     "email": "",
     "phone": "",
+    "taxID": "",
     "address": {
       "streetAddress": "",
       "city": "",
@@ -28,11 +29,12 @@
   "options": {
     "invoiceNumber": 1,
     "paymentTerms": "NET7",
-    "payDays": [
-      1,
-      16
-    ],
+    "payDays": [1, 16],
     "rate": 27.5,
-    "roundingMinutes": 15
+    "roundingMinutes": 15,
+    "taxes": {
+      "type": "gst",
+      "percent": 5
+    }
   }
 }
