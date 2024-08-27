@@ -112,7 +112,7 @@ def generate_invoice():
         c.drawString(inch, sectionY * inch, me['phone'])
     if len(me['taxID']) > 0:
         sectionY += .25
-        c.drawString(inch, sectionY * inch, f"gst #: {me['taxID']}")
+        c.drawString(inch, sectionY * inch, f"BN: {me['taxID']}")
 
     # Client details
     sectionY = 3
