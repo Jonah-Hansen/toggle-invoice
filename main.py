@@ -193,7 +193,7 @@ def generate_invoice():
 
     data.append(['', '', 'SUBTOTAL', '{0:.2f}'.format(
         subtotal)])
-    taxes = subtotal * (options["taxPercent"]/100)
+    taxes = round(subtotal * (options["taxPercent"]/100), 2)
     data.append(['', '', options["taxType"], '{0:.2f}'.format(
         taxes)])
     data.append(['', '', 'TOTAL', '{0:.2f}'.format(
